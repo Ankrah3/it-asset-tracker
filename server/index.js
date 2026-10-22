@@ -1,56 +1,88 @@
 const express = require("express");
 const cors = require("cors");
+const path = require("path");
+const Database = require("better-sqlite3");
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
-let assets = [
-  {
-    id: 1,
-    name: "Dell Latitude 5420",
-    type: "Laptop",
-    assignedTo: "Kwame",
-    status: "In use",
-  },
-];
-let nextId = 2;
+// Database setup
+const db = new Database(path.join(__dirname, "assets.db"));
+db.exec(`
+  CREATE TABLE IF NOT EXISTS assets (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    type TEXT NOT NULL,
+    assignedTo TEXT DEFAULT '',
+    status TEXT DEFAULT 'In use'
+  )
+`);
+
+// Add a sample asset the first time only
+if (db.prepare("SELECT COUNT(*) AS n FROM assets").get().n === 0) {
+  db.prepare(
+    "INSERT INTO assets (name, type, assignedTo, status) VALUES (?, ?, ?, ?)",
+  ).run("Dell Latitude 5420", "Laptop", "Kwame", "In use");
+}
+
+app.get("/", (req, res) => {
+  res.send("IT Asset Tracker API is running. Try /api/assets");
+});
 
 // Get all assets (optional ?status= filter)
 app.get("/api/assets", (req, res) => {
   const { status } = req.query;
-  res.json(status ? assets.filter((a) => a.status === status) : assets);
+  const rows = status
+    ? db
+        .prepare("SELECT * FROM assets WHERE status = ? ORDER BY id")
+        .all(status)
+    : db.prepare("SELECT * FROM assets ORDER BY id").all();
+  res.json(rows);
 });
 
 // Add an asset
 app.post("/api/assets", (req, res) => {
   const { name, type, assignedTo, status } = req.body;
-  if (!name || !type)
+  if (!name || !type) {
     return res.status(400).json({ error: "name and type are required" });
-  const asset = {
-    id: nextId++,
-    name,
-    type,
-    assignedTo: assignedTo || "",
-    status: status || "In use",
-  };
-  assets.push(asset);
+  }
+  const info = db
+    .prepare(
+      "INSERT INTO assets (name, type, assignedTo, status) VALUES (?, ?, ?, ?)",
+    )
+    .run(name, type, assignedTo || "", status || "In use");
+  const asset = db
+    .prepare("SELECT * FROM assets WHERE id = ?")
+    .get(info.lastInsertRowid);
   res.status(201).json(asset);
 });
 
 // Update an asset
 app.put("/api/assets/:id", (req, res) => {
-  const asset = assets.find((a) => a.id === Number(req.params.id));
-  if (!asset) return res.status(404).json({ error: "Asset not found" });
-  Object.assign(asset, req.body);
-  res.json(asset);
+  const existing = db
+    .prepare("SELECT * FROM assets WHERE id = ?")
+    .get(req.params.id);
+  if (!existing) return res.status(404).json({ error: "Asset not found" });
+
+  const merged = { ...existing, ...req.body };
+  db.prepare(
+    "UPDATE assets SET name = ?, type = ?, assignedTo = ?, status = ? WHERE id = ?",
+  ).run(
+    merged.name,
+    merged.type,
+    merged.assignedTo,
+    merged.status,
+    existing.id,
+  );
+
+  res.json(db.prepare("SELECT * FROM assets WHERE id = ?").get(existing.id));
 });
 
 // Delete an asset
 app.delete("/api/assets/:id", (req, res) => {
-  const before = assets.length;
-  assets = assets.filter((a) => a.id !== Number(req.params.id));
-  if (assets.length === before)
+  const info = db.prepare("DELETE FROM assets WHERE id = ?").run(req.params.id);
+  if (info.changes === 0)
     return res.status(404).json({ error: "Asset not found" });
   res.status(204).end();
 });
