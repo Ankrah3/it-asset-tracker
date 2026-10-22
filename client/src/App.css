@@ -48,3 +48,23 @@ td {
 .error {
   color: #dc2626;
 }
+.toolbar {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+.toolbar input {
+  flex: 2;
+  padding: 0.5rem;
+}
+.toolbar select {
+  flex: 1;
+  padding: 0.5rem;
+}
+button.secondary {
+  background: #6b7280;
+}
+td.actions {
+  display: flex;
+  gap: 0.5rem;
+}
