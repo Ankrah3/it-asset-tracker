@@ -1,0 +1,81 @@
+# IT Asset Tracker
+
+A full-stack web app for tracking company IT equipment such as laptops, phones and routers. You can see who has each device and what state it's in.
+
+## Features
+
+- Add, edit and delete assets
+- Assign each asset to a person
+- Track status: In use, In repair or Retired
+- Search by name, type or assigned person
+- Filter by status
+- Data stored in a SQLite database, so it persists between restarts
+
+## Tech stack
+
+| Layer     | Technology              |
+| --------- | ----------------------- |
+| Front end | React (Vite), CSS       |
+| Back end  | Node.js, Express        |
+| Database  | SQLite (better-sqlite3) |
+
+## Screenshot
+
+![IT Asset Tracker](screenshots/app.png)
+
+## Getting started
+
+You need Node.js 20 or newer.
+
+```bash
+git clone https://github.com/Ankrah3/it-asset-tracker.git
+cd it-asset-tracker
+```
+
+**Start the API (terminal 1)**
+
+```bash
+cd server
+npm install
+npm run dev
+```
+
+The API runs at `http://localhost:5000`. The database file is created automatically on first run.
+
+**Start the front end (terminal 2)**
+
+```bash
+cd client
+npm install
+npm run dev
+```
+
+Open the address Vite prints, usually `http://localhost:5173`.
+
+## API
+
+| Method | Endpoint          | Description                                  |
+| ------ | ----------------- | -------------------------------------------- |
+| GET    | `/api/assets`     | List all assets (optional `?status=` filter) |
+| POST   | `/api/assets`     | Create an asset                              |
+| PUT    | `/api/assets/:id` | Update an asset                              |
+| DELETE | `/api/assets/:id` | Delete an asset                              |
+
+## Project structure
+
+```
+it-asset-tracker/
+├── client/    React front end
+├── server/    Express API and SQLite database
+└── README.md
+```
+
+## Possible next steps
+
+- User login
+- CSV export
+- Dashboard with counts per status
+
+## Author
+
+David Ankrah - [GitHub](https://github.com/Ankrah3)
